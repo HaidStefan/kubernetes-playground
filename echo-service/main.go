@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+var version = "1.0.8"
+
 var (
 	listenFlag  = flag.String("listen", ":5678", "address and port to listen")
 	textFlag    = flag.String("text", "", "text to put on the webpage")
@@ -27,7 +29,7 @@ func main() {
 
 	// Asking for the version?
 	if *versionFlag {
-		fmt.Fprintln(stderrW, "1.0.2")
+		fmt.Fprintln(stderrW, version)
 		os.Exit(0)
 	}
 
@@ -89,10 +91,18 @@ func main() {
 
 func httpEcho(responseValue string, nodeValue string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Response cookie
 		expiration := time.Now().Add(365 * 24 * time.Hour)
 		cookie := http.Cookie{Name: "node", Value: nodeValue, Expires: expiration}
 		http.SetCookie(w, &cookie)
-		fmt.Fprintln(w, responseValue)
+		// Resonse content
+		fmt.Fprintln(w, 
+			"<body bgcolor='" + nodeValue + "'>" +  
+			"Text: " + responseValue + 
+			"<br>Server Time: " + time.Now().String() + 
+			"<br>App Version: " + version +
+			"</body>", 
+		)
 	}
 }
 

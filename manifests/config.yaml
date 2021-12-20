@@ -57,11 +57,11 @@ metadata:
   name: myapp-destination-rule
 spec:
   host: myapp
-  trafficPolicy:
-    loadBalancer:
-      consistentHash:
-        useSourceIp: true
-        #httpQueryParameterName: hashable
+  # trafficPolicy:
+  #   loadBalancer:
+  #     consistentHash:
+  #       useSourceIp: true
+  #       httpQueryParameterName: hashable
   subsets:
   - name: v1
     labels:
@@ -102,9 +102,9 @@ spec:
     spec:
       containers:
       - name: myapp
-        image: localhost:5000/echo-service:1.0.2
+        image: localhost:5000/echo-service:1.0.3
         args:
-          - "-text=<body bgcolor='#00FF00'>"
+          - "-text=Hello from v1"
           - "-node=green"
           - "-listen=:80"
         imagePullPolicy: IfNotPresent
@@ -129,9 +129,9 @@ spec:
     spec:
       containers:
       - name: myapp
-        image: localhost:5000/echo-service:1.0.2
+        image: localhost:5000/echo-service:1.0.8
         args:
-        - "-text=<body bgcolor='#0000FF'>"
+        - "-text=Hello World"
         - "-node=blue"
         - "-listen=:80"
         imagePullPolicy: IfNotPresent

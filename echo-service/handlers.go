@@ -19,7 +19,7 @@ const (
 func withAppHeaders(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set(httpHeaderAppName, "echo-service")
-		w.Header().Set(httpHeaderAppVersion, "1.0.2")
+		w.Header().Set(httpHeaderAppVersion, version)
 		h(w, r)
 	}
 }
