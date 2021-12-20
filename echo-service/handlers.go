@@ -18,8 +18,8 @@ const (
 // withAppHeaders adds application headers such as X-App-Version and X-App-Name.
 func withAppHeaders(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(httpHeaderAppName, "http-echo")
-		w.Header().Set(httpHeaderAppVersion, "1.0.0")
+		w.Header().Set(httpHeaderAppName, "echo-service")
+		w.Header().Set(httpHeaderAppVersion, "1.0.2")
 		h(w, r)
 	}
 }

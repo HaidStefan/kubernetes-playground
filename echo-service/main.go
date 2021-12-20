@@ -27,7 +27,7 @@ func main() {
 
 	// Asking for the version?
 	if *versionFlag {
-		fmt.Fprintln(stderrW, "1.0.0")
+		fmt.Fprintln(stderrW, "1.0.2")
 		os.Exit(0)
 	}
 
@@ -39,7 +39,7 @@ func main() {
 
 	// Validation
 	if *nodeFlag == "" {
-		fmt.Fprintln(stderrW, "Missing -node option! (Values: blue |")
+		fmt.Fprintln(stderrW, "Missing -node option! (Values: blue | green")
 		os.Exit(127)
 	}
 
