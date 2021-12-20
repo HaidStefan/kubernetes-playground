@@ -2,14 +2,14 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-  name: app-gateway
+  name: proxy-gateway
 spec:
   selector:
     istio: ingressgateway
   servers:
   - port:
       number: 80
-      name: http
+      name: https
       protocol: HTTP
     hosts:
     - "*"
@@ -17,12 +17,12 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: myapp
+  name: proxy
 spec:
   hosts:
   - "*"
   gateways:
-  - app-gateway
+  - proxy-gateway
   http:
     - match:
       - headers:
@@ -30,7 +30,7 @@ spec:
             regex: ^(.\*?;)?(node=green)(;.\*)?$
       route:
       - destination:
-          host: myapp
+          host: proxy
           subset: v1
     - match:
       - headers:
@@ -38,15 +38,15 @@ spec:
             regex: ^(.\*?;)?(node=blue)(;.\*)?$
       route:
       - destination:
-          host: myapp
+          host: proxy
           subset: v2
     - route:
       - destination:
-          host: myapp
+          host: proxy
           subset: v1
         weight: 50
       - destination:
-          host: myapp
+          host: proxy
           subset: v2
         weight: 50
       
@@ -54,9 +54,9 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: myapp-destination-rule
+  name: proxy-destination-rule
 spec:
-  host: myapp
+  host: proxy
   # trafficPolicy:
   #   loadBalancer:
   #     consistentHash:
@@ -73,16 +73,98 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: myapp
+  name: proxy
   labels:
-    app: myapp
+    app: proxy
 spec:
   selector:
-    app: myapp
+    app: proxy
   ports:
   - protocol: TCP
     port: 80
-    targetPort: 80 
+    targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proxy-v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: proxy
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: proxy
+        version: v1
+    spec:
+      containers:
+      - name: proxy
+        image: localhost:5000/reverse-proxy:1.0.0
+        args:
+          - "-listen=:80"
+          - "-address=http://myapp-v1:8080"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proxy-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: proxy
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: proxy
+        version: v2
+    spec:
+      containers:
+      - name: proxy
+        image: localhost:5000/reverse-proxy:1.0.0
+        args:
+          - "-listen=:80"
+          - "-address=http://myapp-v2:8080"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-v1
+  labels:
+    app: myapp-v1
+spec:
+  selector:
+    app: myapp
+    version: v1
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-v2
+  labels:
+    app: myapp-v2
+spec:
+  selector:
+    app: myapp
+    version: v2
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -106,10 +188,10 @@ spec:
         args:
           - "-text=Hello from v1"
           - "-node=green"
-          - "-listen=:80"
+          - "-listen=:8080"
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 80
+        - containerPort: 8080
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -131,9 +213,9 @@ spec:
       - name: myapp
         image: localhost:5000/echo-service:1.0.8
         args:
-        - "-text=Hello World"
+        - "-text=Hello from v2"
         - "-node=blue"
-        - "-listen=:80"
+        - "-listen=:8080"
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 80
+        - containerPort: 8080
