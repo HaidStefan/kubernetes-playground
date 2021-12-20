@@ -1,0 +1,139 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: app-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: myapp
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - app-gateway
+  http:
+    - match:
+      - headers:
+          cookie:
+            regex: ^(.\*?;)?(node=green)(;.\*)?$
+      route:
+      - destination:
+          host: myapp
+          subset: v1
+    - match:
+      - headers:
+          cookie:
+            regex: ^(.\*?;)?(node=blue)(;.\*)?$
+      route:
+      - destination:
+          host: myapp
+          subset: v2
+    - route:
+      - destination:
+          host: myapp
+          subset: v1
+        weight: 50
+      - destination:
+          host: myapp
+          subset: v2
+        weight: 50
+      
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: myapp-destination-rule
+spec:
+  host: myapp
+  trafficPolicy:
+    loadBalancer:
+      consistentHash:
+        useSourceIp: true
+        #httpQueryParameterName: hashable
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+  labels:
+    app: myapp
+spec:
+  selector:
+    app: myapp
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: myapp
+        version: v1
+    spec:
+      containers:
+      - name: myapp
+        image: localhost:5000/echo-service:1.0.2
+        args:
+          - "-text=<body bgcolor='#00FF00'>"
+          - "-node=green"
+          - "-listen=:80"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: myapp
+        version: v2
+    spec:
+      containers:
+      - name: myapp
+        image: localhost:5000/echo-service:1.0.2
+        args:
+        - "-text=<body bgcolor='#0000FF'>"
+        - "-node=blue"
+        - "-listen=:80"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
