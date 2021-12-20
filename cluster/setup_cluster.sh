@@ -1,8 +1,23 @@
 #!/bin/bash
 set -x
+
+# Add a local registry for docker images
+reg_name='kind-registry'
+reg_port='5000'
+running="$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)"
+if [ "${running}" != 'true' ]; then
+  docker run \
+    -d --restart=always -p "${reg_port}:5000" --name "${reg_name}" \
+    registry:2
+fi
+
 cat <<EOF | kind create cluster --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+containerdConfigPatches:
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${reg_port}"]
+    endpoint = ["http://${reg_name}:${reg_port}"]
 nodes:
 - role: control-plane
   kubeadmConfigPatches:
@@ -124,6 +139,9 @@ EOF
 
 # https://www.google.com/search?q=autobots+roll+out+meme&client=firefox-b-d&biw=1024&bih=1056&tbm=vid&sxsrf=AOaemvL8JNKPOsREHdFrv42cLjS9lcjsmA%3A1634152566673&ei=djBnYcuwKOD_7_UP3rm42As&oq=autobots+roll+out+meme&gs_l=psy-ab-video.3..35i39k1j0i512k1j0i22i30k1l3.547.1892.0.3351.5.5.0.0.0.0.174.336.0j2.2.0....0...1c.1.64.psy-ab-video..3.2.335...0i512i263i20k1.0.4rNjFNXSij4
 # kubectl label namespace default istio-injection=enabled
+
+# Connect local docker registry to cluster
+docker network connect "kind" "${reg_name}" > /dev/null 2>&1 &
 
 # The Istio operator controller begins the process of installing Istio within 90 seconds of the creation of the IstioOperator resource. The Istio installation completes within 120 seconds.
 # wut and how can you even?
