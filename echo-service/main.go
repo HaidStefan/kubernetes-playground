@@ -96,12 +96,12 @@ func httpEcho(responseValue string, nodeValue string) http.HandlerFunc {
 		cookie := http.Cookie{Name: "node", Value: nodeValue, Expires: expiration}
 		http.SetCookie(w, &cookie)
 		// Resonse content
-		fmt.Fprintln(w, 
-			"<body bgcolor='" + nodeValue + "'>" +  
-			"Text: " + responseValue + 
-			"<br>Server Time: " + time.Now().String() + 
-			"<br>App Version: " + version +
-			"</body>", 
+		fmt.Fprintln(w,
+			"<body bgcolor='"+nodeValue+"'>"+
+				"Text: "+responseValue+
+				"<br>Server Time: "+time.Now().String()+
+				"<br>App Version: "+version+
+				"</body>",
 		)
 	}
 }
